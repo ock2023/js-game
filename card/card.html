@@ -157,7 +157,7 @@
 
       function resetGame() {
         wrapper.innerHTML = "";
-        colorCopy = colors.concat(colors); // 원본이 바뀌면 안돼서 splice 등 쓰면 안된다. 그래서 concat 써줌.
+        colorCopy = colors.concat(colors);
         shuffled = [];
         completed = [];
         clickable = false;
