@@ -28,6 +28,7 @@
   </head>
 
   <body>
+    <div id="timer">0초</div>
     <table id="table">
       <tbody></tbody>
     </table>
@@ -35,6 +36,7 @@
     <script>
       const tbody = document.querySelector("#table tbody");
       const result = document.querySelector("#result");
+      const timer = document.querySelector("#timer");
 
       const row = 10; // 줄
       const cell = 10; // 칸
@@ -50,6 +52,13 @@
       };
 
       let data;
+      let openCount = 0;
+      let startTime = new Date();
+      const interval = setInterval(() => {
+        const time = Math.floor((new Date() - startTime) / 1000);
+        timer.textContent = `${time}초`;
+      }, 1000);
+
       function plantMine() {
         const candidate = Array(row * cell)
           .fill()
@@ -138,6 +147,47 @@
         return i;
       }
 
+      function open(rowIndex, cellIndex) {
+        if (data[rowIndex]?.[cellIndex] >= CODE.OPENED) return;
+
+        const target = tbody.children[rowIndex]?.children[cellIndex];
+        if (!target) {
+          return;
+        }
+        const count = countMine(rowIndex, cellIndex);
+        target.textContent = count || "";
+        target.className = "opened";
+        data[rowIndex][cellIndex] = count;
+        openCount++;
+        console.log(openCount);
+        if (openCount === row * cell - mine) {
+          const time = (new Date() - startTime) / 1000;
+          clearInterval(interval);
+          tbody.removeEventListener("contextmenu", onRightClick);
+          tbody.removeEventListener("click", onLeftClick);
+          setTimeout(() => {
+            alert(`승리했습니다! ${time}초가 걸렸습니다.`);
+          }, 500);
+        }
+        return count;
+      }
+
+      function openAround(rI, cI) {
+        setTimeout(() => {
+          const count = open(rI, cI);
+          if (count === 0) {
+            openAround(rI - 1, cI - 1);
+            openAround(rI - 1, cI);
+            openAround(rI - 1, cI + 1);
+            openAround(rI, cI - 1);
+            openAround(rI, cI + 1);
+            openAround(rI + 1, cI - 1);
+            openAround(rI + 1, cI);
+            openAround(rI + 1, cI + 1);
+          }
+        }, 0);
+      }
+
       function onLeftClick(e) {
         const target = e.target;
         const rowIndex = target.parentNode.rowIndex;
@@ -145,14 +195,12 @@
         const cellData = data[rowIndex][cellIndex];
         if (cellData === CODE.NORMAL) {
           // 닫힌 칸이면
-          const count = countMine(rowIndex, cellIndex);
-          target.textContent = count ?? "";
-          target.className = "opened";
-          data[rowIndex][cellIndex] = count;
+          openAround(rowIndex, cellIndex);
         } else if (cellData === CODE.MINE) {
           // 지뢰칸이면
           target.textContent = "💣";
           target.className = "opened";
+          clearInterval(interval);
           tbody.removeEventListener("contextmenu", onRightClick);
           tbody.removeEventListener("click", onLeftClick);
         }
